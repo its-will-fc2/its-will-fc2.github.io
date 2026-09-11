@@ -1,147 +1,668 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>root@willhuang:~</title>
-    <style>
-        body { 
-            background-color: #0d1117; 
-            color: #00ff00; 
-            font-family: 'Courier New', Courier, monospace; 
-            padding: 40px 20px; 
-            margin: 0;
-            line-height: 1.6;
-        }
-        .terminal { 
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: #010409; 
-            border: 1px solid #30363d; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 15px rgba(0,255,0,0.1); 
-            height: 80vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .header { 
-            background: #161b22; 
-            padding: 8px 15px; 
-            color: #8b949e; 
-            font-size: 14px; 
-            border-bottom: 1px solid #30363d;
-        }
-        .content { 
-            padding: 20px; 
-            flex-grow: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        .prompt { color: #58a6ff; font-weight: bold; margin-right: 8px; }
-        .command-text { color: #ffffff; font-weight: bold; }
-        .output { color: #c9d1d9; margin: 10px 0 20px 0; white-space: pre-wrap; }
-        .highlight { color: #f0883e; }
-        .error { color: #ff7b72; }
-        
-        /* Interactive Input Styling */
-        .input-line { display: flex; align-items: center; margin-top: 10px; }
-        input[type="text"] {
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
-            font-weight: bold;
-            flex-grow: 1;
-            outline: none;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will Huang | Project KAIJU-SEC</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Courier New", Courier, monospace;
+    }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #010409; border-left: 1px solid #30363d; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #58a6ff; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #080b10;
+      color: #c9d1d9;
+    }
 
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            input[type="text"] { font-size: 14px; }
-        }
-    </style>
+    /* Screen shake container */
+    #viewport {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shaking {
+      animation: shake 0.12s infinite;
+    }
+
+    @keyframes shake {
+      0% { transform: translate(1px, 1px) rotate(0deg); }
+      25% { transform: translate(-2px, -2px) rotate(-0.5deg); }
+      50% { transform: translate(2px, 0px) rotate(0.5deg); }
+      75% { transform: translate(-1px, 2px) rotate(0deg); }
+      100% { transform: translate(1px, -1px) rotate(0deg); }
+    }
+
+    /* Background Parallax Skyline */
+    #skyline {
+      position: absolute;
+      bottom: 60px;
+      left: 0;
+      height: 240px;
+      width: 6000px;
+      background: repeating-linear-gradient(
+        to right,
+        #111622 0px,
+        #111622 45px,
+        #0b0e14 45px,
+        #0b0e14 65px,
+        #161d2d 65px,
+        #161d2d 120px,
+        transparent 120px,
+        transparent 145px
+      );
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    /* Ground plane */
+    #ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #161b22;
+      border-top: 2px solid #00f0ff;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+      z-index: 5;
+    }
+
+    /* World container (moves left as Godzilla walks right) */
+    #world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 5000px;
+      transition: transform 0.05s linear;
+      z-index: 6;
+    }
+
+    /* Defense Towers / Sector Nodes */
+    .tower {
+      position: absolute;
+      bottom: 60px;
+      width: 100px;
+      height: 220px;
+      background: #0d131a;
+      border: 1px solid #30363d;
+      border-top: 3px solid #58a6ff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 15px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .tower:hover, .tower.hit {
+      border-color: #00f0ff;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+    }
+
+    .tower-tag {
+      font-size: 0.7rem;
+      color: #00f0ff;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .tower-title {
+      font-size: 0.8rem;
+      text-align: center;
+      color: #f0f6fc;
+      padding: 0 4px;
+    }
+
+    /* Godzilla Vector Sprite */
+    #kaiju {
+      position: absolute;
+      bottom: 50px;
+      left: 80px;
+      width: 220px;
+      height: 220px;
+      z-index: 10;
+      transform-origin: bottom center;
+      transition: transform 0.15s ease-out;
+    }
+
+    /* Silhouette Styling */
+    .kaiju-body {
+      fill: #0d1117;
+      stroke: #1b222d;
+      stroke-width: 1.5;
+    }
+
+    /* Spine glow animation classes */
+    .spine {
+      fill: #161b22;
+      transition: fill 0.2s ease, filter 0.2s ease;
+    }
+
+    .spine-charged {
+      fill: #00f0ff !important;
+      filter: drop-shadow(0 0 8px #00f0ff) drop-shadow(0 0 16px #39c5bb);
+    }
+
+    /* Stomp Animation */
+    .stomping {
+      animation: heavyStomp 0.4s ease forwards;
+    }
+
+    @keyframes heavyStomp {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-16px) rotate(-1deg); }
+      75% { transform: translateY(0) rotate(1deg); }
+      100% { transform: translateY(0); }
+    }
+
+    /* Atomic Beam */
+    #atomic-beam {
+      position: absolute;
+      bottom: 150px;
+      left: 260px;
+      height: 24px;
+      width: 0px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.95), #00f0ff 40%, rgba(0,240,255,0.1));
+      border-radius: 12px;
+      box-shadow: 0 0 25px #00f0ff, 0 0 45px #39c5bb;
+      z-index: 9;
+      opacity: 0;
+      pointer-events: none;
+      transition: width 0.15s ease-out, opacity 0.1s;
+    }
+
+    /* Tactical HUD */
+    #hud {
+      position: absolute;
+      top: 18px;
+      left: 20px;
+      z-index: 50;
+    }
+
+    .hud-box {
+      background: rgba(13, 17, 23, 0.85);
+      border: 1px solid #00f0ff;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      border-radius: 4px;
+      padding: 12px 18px;
+    }
+
+    .hud-title {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #00f0ff;
+    }
+
+    .hud-controls {
+      font-size: 0.75rem;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+
+    /* Modal Dossier Overlay */
+    #modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 7, 11, 0.82);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+
+    #modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-frame {
+      position: relative;
+      background: #0d1117;
+      border: 1px solid #00f0ff;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+      width: 85%;
+      max-width: 860px;
+      max-height: 82vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+      border-radius: 4px;
+    }
+
+    #modal-close {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      background: none;
+      border: none;
+      color: #00f0ff;
+      font-size: 1.6rem;
+      cursor: pointer;
+    }
+
+    /* Modal Layouts & Placeholders */
+    .sector-title {
+      color: #00f0ff;
+      font-size: 1.25rem;
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+    }
+
+    .section-divider {
+      border: 0;
+      height: 1px;
+      background: #30363d;
+      margin: 16px 0;
+    }
+
+    .profile-wrap {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 14px;
+    }
+
+    .img-slot {
+      border: 2px dashed rgba(0, 240, 255, 0.4);
+      background: rgba(0, 240, 255, 0.03);
+      color: #00f0ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+    }
+
+    .id-photo { width: 140px; height: 160px; flex-shrink: 0; }
+    .hobby-photo { height: 95px; margin-top: 10px; }
+    .banner-photo { height: 110px; margin-top: 14px; }
+    .project-photo { height: 100px; margin-top: 8px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 12px;
+      border-radius: 4px;
+    }
+
+    .card h4 { color: #58a6ff; font-size: 0.95rem; margin-bottom: 6px; }
+    .card p, .card li { font-size: 0.85rem; }
+    ul { margin-left: 18px; margin-top: 6px; }
+  </style>
 </head>
 <body>
-    <div class="terminal">
-        <div class="header">bash - 100x30</div>
-        <div class="content" id="terminal-content">
-            <div id="output-history">
-                <div class="output">Welcome to Will Huang's interactive portfolio.
-Type '<span class="highlight">help</span>' to see a list of available commands.</div>
-            </div>
-            
-            <div class="input-line">
-                <span class="prompt">guest@willhuang:~$</span>
-                <input type="text" id="command-input" autocomplete="off" autofocus>
-            </div>
+
+  <div id="viewport">
+
+    <div id="hud">
+      <div class="hud-box">
+        <div class="hud-title">TARGET: KAIJU-SEC // WILL HUANG</div>
+        <div class="hud-controls">
+          <strong>A / D</strong> or <strong>ARROWS</strong>: Stomp & Walk | 
+          <strong>SPACE</strong>: Charge Spines & Atomic Breath
         </div>
+      </div>
     </div>
 
-    <script>
-        const inputField = document.getElementById('command-input');
-        const outputHistory = document.getElementById('output-history');
-        const terminalContent = document.getElementById('terminal-content');
+    <div id="skyline"></div>
 
-        // Command Data
-        const fileSystem = {
-            'help': `Available commands:\n  <span class="highlight">whoami</span>       - Display basic information about me\n  <span class="highlight">skills</span>       - List technical skills and frameworks\n  <span class="highlight">experience</span>   - View my work history\n  <span class="highlight">projects</span>     - View recent cybersecurity & dev projects\n  <span class="highlight">contact</span>      - Get my contact information\n  <span class="highlight">clear</span>        - Clear the terminal screen`,
-            
-            'whoami': `<strong>Will Huang</strong>\nBSc in Computer Science | Wilfrid Laurier University\nBSc in Mathematics (Minor in CS & Stats) | University of Toronto\n\nDriven by system architecture, security operations, and data analysis. Experienced in blending statistical rigor with actionable software engineering.`,
-            
-            'skills': `{\n  "Languages": ["Python", "C", "C++", "Java", "JavaScript", "HTML", "CSS", "Swift", "R", "SQL"],\n  "Frameworks": ["PyTorch", "TensorFlow", "Pandas", "NodeJS", "ExpressJS", "React", "Bootstrap"],\n  "Tools": ["LLMs", "Git", "Docker", "MongoDB", "Linux/Unix"]\n}`,
-            
-            'experience': `<strong>Data Analyst @ Osiris Vertical Farm</strong> (Apr 2022 - Apr 2023)\nOptimized plant health by analyzing environmental and growth data using Python, Pandas, R, and Excel. Leveraged predictive modelling and regression analysis to forecast anomalies.\n\n<strong>Sales Professional & Key Holder @ Michael Hill</strong> (May 2023 - Present)\nManaged security protocols, staff supervision, and exceeded corporate KPIs by 20% ranking in the top 10% of regional performers.`,
+    <!-- Scrolling Sector Plane -->
+    <div id="world">
+      <!-- Sector 1 -->
+      <div class="tower" style="left: 600px;" data-sector="sec1">
+        <span class="tower-tag">SEC-01</span>
+        <span class="tower-title">ORIGIN // TELEMETRY</span>
+      </div>
 
-            'projects': `<strong>1. Mini-Agentic SOC Log Parser</strong> (May 2026)\n<em>Stack: Docker, Python, Gemini API</em>\nEngineered a containerized AI threat-detection agent to identify SQL injection and brute-force SSH attacks from live logs. Automated structured JSON threat-classification pipelines to trigger simulated iptables blocking rules.\n\n<strong>2. Stealth Keylogger</strong> (Dec 2025)\n<em>Stack: Python, Low-level scripting</em>\nDeveloped a local monitoring application intercepting keystrokes while bypassing Windows Defender using hook managers. Analyzed endpoint vulnerabilities to document defensive mitigation strategies.`,
+      <!-- Sector 2 -->
+      <div class="tower" style="left: 1400px;" data-sector="sec2">
+        <span class="tower-tag">SEC-02</span>
+        <span class="tower-title">FRONTLINE OPERATIONS</span>
+      </div>
 
-            'contact': `Location: Cambridge, ON\nEmail: willy0630@outlook.com\nLinkedIn: linkedin.com/in/willhuang\nGitHub: github.com/willhuang`
-        };
+      <!-- Sector 3 -->
+      <div class="tower" style="left: 2200px;" data-sector="sec3">
+        <span class="tower-tag">SEC-03</span>
+        <span class="tower-title">THREAT LABS (PROJECTS)</span>
+      </div>
 
-        // Keep focus on the input field when clicking anywhere in the terminal
-        document.querySelector('.terminal').addEventListener('click', () => {
-            inputField.focus();
+      <!-- Sector 4 -->
+      <div class="tower" style="left: 3000px;" data-sector="sec4">
+        <span class="tower-tag">SEC-04</span>
+        <span class="tower-title">TITAN CLEARANCE (CERTS)</span>
+      </div>
+    </div>
+
+    <!-- Atomic Beam Ray -->
+    <div id="atomic-beam"></div>
+
+    <!-- Godzilla Vector Silhouette with Dedicated Spines -->
+    <div id="kaiju">
+      <svg viewBox="0 0 200 200" width="100%" height="100%">
+        <!-- Dorsal Spines (Back to Neck) -->
+        <polygon id="spine-1" class="spine" points="30,135 15,120 38,125" />
+        <polygon id="spine-2" class="spine" points="40,118 20,95 48,105" />
+        <polygon id="spine-3" class="spine" points="50,96 30,70 60,82" />
+        <polygon id="spine-4" class="spine" points="62,75 48,45 74,62" />
+        <polygon id="spine-5" class="spine" points="75,56 68,32 86,48" />
+
+        <!-- Main Kaiju Silhouette Body -->
+        <path class="kaiju-body" d="
+          M 10,175 
+          Q 35,160 55,145 
+          Q 58,110 70,80 
+          Q 80,50 96,40 
+          Q 108,30 135,32 
+          Q 150,35 152,48 
+          Q 140,55 125,58 
+          Q 142,65 142,75 
+          Q 125,78 112,82 
+          Q 120,98 128,112 
+          Q 145,118 140,128 
+          Q 125,126 115,125 
+          Q 125,145 130,175 
+          L 105,175 
+          Q 98,150 90,140 
+          Q 75,155 58,175 
+          Z" />
+
+        <!-- Glowing Eye -->
+        <circle cx="120" cy="45" r="2.5" fill="#00f0ff" />
+      </svg>
+    </div>
+
+    <div id="ground"></div>
+
+    <!-- Interactive Dossier Modal -->
+    <div id="modal-overlay" class="hidden">
+      <div class="modal-frame">
+        <button id="modal-close">&times;</button>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Content Templates Populated from Resume -->
+  <template id="tpl-sec1">
+    <h2 class="sector-title">SECTOR 01: ORIGIN & TELEMETRY (ABOUT ME)</h2>
+    <div class="profile-wrap">
+      <div class="img-slot id-photo">
+        [IMAGE SLOT:<br>Operative Badge / Profile Photo]
+      </div>
+      <div>
+        <h3>Will Huang</h3>
+        <p style="color:#58a6ff; margin: 4px 0 10px 0;">Cybersecurity & Computer Science | Cambridge, ON</p>
+        <p><strong>Wilfrid Laurier University:</strong> BSc in Computer Science (Expected Aug 2027)</p>
+        <p><strong>University of Toronto:</strong> BSc in Mathematics, Minor in CS & Stats (Sept 2020 – Apr 2023)</p>
+        <p style="margin-top: 8px;"><strong>Comms:</strong> osha09@pm.me | 647-700-8630 | LinkedIn</p>
+      </div>
+    </div>
+    <hr class="section-divider" />
+    <div class="grid-2">
+      <div class="card">
+        <h4>Core Tech Stack</h4>
+        <p><strong>Languages:</strong> Python, C, C++, Java, JavaScript, HTML, CSS, Swift, R, SQL</p>
+        <p style="margin-top: 6px;"><strong>Frameworks & Tools:</strong> Linux/Unix, Docker, Git, MongoDB, React, NodeJS, ExpressJS, PyTorch, TensorFlow, Pandas</p>
+      </div>
+      <div class="img-slot hobby-photo">
+        [IMAGE & TEXT SLOT:<br>Hobbies, Interests, & Market Trading Setups]
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-sec2">
+    <h2 class="sector-title">SECTOR 02: FRONTLINE CONTAINMENT (EXPERIENCE)</h2>
+    <div class="card" style="margin-bottom: 12px;">
+      <h4>Data Analyst <span>@ Osiris Vertical Farm (Apr 2022 – Apr 2023)</span></h4>
+      <ul>
+        <li>Analyzed plant health and growth telemetry utilizing Python, Pandas, R, and Excel.</li>
+        <li>Leveraged predictive regression modeling to forecast production and refine growth cycles.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Sales Professional & Key Holder <span>@ Michael Hill (May 2023 – Present)</span></h4>
+      <ul>
+        <li>Supervised opening/closing protocols, security management, and physical inventory integrity.</li>
+        <li>Surpassed weekly sales benchmarks and KPIs by 20%, ranking in the regional top 10%.</li>
+      </ul>
+    </div>
+    <div class="img-slot banner-photo">
+      [IMAGE SLOT: Operational Snapshots, Workplace Highlights, or Analysis Dashboards]
+    </div>
+  </template>
+
+  <template id="tpl-sec3">
+    <h2 class="sector-title">SECTOR 03: THREAT NEUTRALIZATION LABS (PROJECTS)</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Mini-Agentic SOC Log Parser (May 2026)</h4>
+        <p>Containerized AI detection agent via Google Gemini API to identify SQL injections and SSH brute-force attacks in real time.</p>
+        <p style="margin-top: 4px;">Automated dynamic iptables blocking via structured JSON pipelines.</p>
+        <div class="img-slot project-photo">[IMAGE / GIF SLOT: Docker CLI Demo]</div>
+      </div>
+      <div class="card">
+        <h4>Capture The Flag (CTF) Challenges (Mar 2024)</h4>
+        <p>Executed reverse engineering, penetration testing, and network packet analysis via Wireshark to isolate attack patterns.</p>
+        <div class="img-slot project-photo">[IMAGE SLOT: Scoreboard / Packet Trace]</div>
+      </div>
+      <div class="card" style="grid-column: span 2;">
+        <h4>Cross-Platform Telemetry Keylogger (Dec 2025)</h4>
+        <p>Engineered Python keystroke recorder with <code>pynput</code>, multi-threaded timers, and periodic HTTP POST serialization.</p>
+        <div class="img-slot project-photo">[IMAGE SLOT: Repo Preview / Architecture Diagram]</div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-sec4">
+    <h2 class="sector-title">SECTOR 04: TITAN CLEARANCES (CERTIFICATIONS)</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Microsoft:</strong> Intro to Microsoft Defender XDR Threat Protection</li>
+        <li><strong>Google:</strong> Cybersecurity Professional Certificate (Network Security, Risks, Foundations)</li>
+        <li><strong>AI & Deep Learning:</strong> Build Deep Learning Models with TensorFlow, Artificial Intelligence A-Z</li>
+        <li><strong>Defensive & Offensive Security:</strong> The Complete Cyber Security Course, Learn Ethical Hacking</li>
+        <li><strong>Development:</strong> Complete SQL Bootcamp, Beginning C++, Learn React, Intro to Swift</li>
+      </ul>
+    </div>
+    <div class="img-slot banner-photo">
+      [IMAGE GRID SLOT: Credly Badges & Certification Thumbnails]
+    </div>
+  </template>
+
+  <script>
+    // --- Synthesized Web Audio Engine ---
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    // Heavy Stomp Bass Thud
+    function playStompSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    }
+
+    // Atomic Breath Plasma Charge & Roar Blast
+    function playBeamSound() {
+      if (!audioCtx) return;
+      // High-pitch charging tone
+      const chargeOsc = audioCtx.createOscillator();
+      const chargeGain = audioCtx.createGain();
+      chargeOsc.type = "sine";
+      chargeOsc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      chargeOsc.frequency.linearRampToValueAtTime(850, audioCtx.currentTime + 0.5);
+      chargeGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      chargeGain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.5);
+      chargeOsc.connect(chargeGain);
+      chargeGain.connect(audioCtx.destination);
+      chargeOsc.start();
+      chargeOsc.stop(audioCtx.currentTime + 0.5);
+
+      // Low frequency plasma blast
+      setTimeout(() => {
+        const blastOsc = audioCtx.createOscillator();
+        const blastGain = audioCtx.createGain();
+        blastOsc.type = "sawtooth";
+        blastOsc.frequency.setValueAtTime(160, audioCtx.currentTime);
+        blastOsc.frequency.linearRampToValueAtTime(45, audioCtx.currentTime + 0.7);
+        blastGain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+        blastGain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.7);
+        blastOsc.connect(blastGain);
+        blastGain.connect(audioCtx.destination);
+        blastOsc.start();
+        blastOsc.stop(audioCtx.currentTime + 0.7);
+      }, 500);
+    }
+
+    // --- State & Selectors ---
+    let worldX = 0;
+    let isFiring = false;
+    let isModalOpen = false;
+
+    const viewport = document.getElementById("viewport");
+    const world = document.getElementById("world");
+    const skyline = document.getElementById("skyline");
+    const kaiju = document.getElementById("kaiju");
+    const beam = document.getElementById("atomic-beam");
+    const spines = [1, 2, 3, 4, 5].map(i => document.getElementById(`spine-${i}`));
+    const towers = document.querySelectorAll(".tower");
+
+    const modal = document.getElementById("modal-overlay");
+    const modalBody = document.getElementById("modal-body");
+    const modalClose = document.getElementById("modal-close");
+
+    // Open Sector Dossier
+    function openSector(secId) {
+      const tpl = document.getElementById(`tpl-${secId}`);
+      if (!tpl) return;
+      modalBody.innerHTML = tpl.innerHTML;
+      modal.classList.remove("hidden");
+      isModalOpen = true;
+    }
+
+    modalClose.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      isModalOpen = false;
+    });
+
+    // Manual click on towers
+    towers.forEach(t => {
+      t.addEventListener("click", () => openSector(t.dataset.sector));
+    });
+
+    // Stomp Movement Handler
+    function step(dir) {
+      if (isFiring || isModalOpen) return;
+      initAudio();
+
+      worldX += dir * 45;
+      if (worldX > 0) worldX = 0;
+      if (worldX < -3200) worldX = -3200;
+
+      world.style.transform = `translateX(${worldX}px)`;
+      skyline.style.transform = `translateX(${worldX * 0.3}px)`;
+
+      // Trigger heavy footstep animation & audio
+      kaiju.classList.remove("stomping");
+      void kaiju.offsetWidth; // force reflow
+      kaiju.classList.add("stomping");
+
+      viewport.classList.add("shaking");
+      setTimeout(() => viewport.classList.remove("shaking"), 120);
+
+      playStompSound();
+    }
+
+    // Sequential Spine Charge & Atomic Breath
+    function fireAtomicBreath() {
+      if (isFiring || isModalOpen) return;
+      initAudio();
+      isFiring = true;
+
+      playBeamSound();
+
+      // Charge dorsal plates from tail to neck
+      spines.forEach((spine, idx) => {
+        setTimeout(() => {
+          spine.classList.add("spine-charged");
+        }, idx * 100);
+      });
+
+      // Fire horizontal beam after charge completes (500ms)
+      setTimeout(() => {
+        viewport.classList.add("shaking");
+        beam.style.opacity = "1";
+        beam.style.width = "750px";
+
+        // Check collision between beam range and target towers
+        const kaijuScreenRight = 80 + 220;
+        towers.forEach(tower => {
+          const towerPos = tower.offsetLeft + worldX;
+          if (towerPos > kaijuScreenRight && towerPos < kaijuScreenRight + 750) {
+            tower.classList.add("hit");
+            setTimeout(() => {
+              tower.classList.remove("hit");
+              openSector(tower.dataset.sector);
+            }, 300);
+          }
         });
 
-        // Listen for the Enter key
-        inputField.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const command = this.value.trim().toLowerCase();
-                this.value = ''; // Clear input
-                
-                if (command === '') return;
+        // Retract beam and cool down spines
+        setTimeout(() => {
+          beam.style.width = "0px";
+          beam.style.opacity = "0";
+          viewport.classList.remove("shaking");
+          spines.forEach(s => s.classList.remove("spine-charged"));
+          isFiring = false;
+        }, 450);
 
-                // Echo the command properly without escape characters
-                const echoHTML = `<div class="prompt" style="display:inline-block;">guest@willhuang:~$</div> <span class="command-text">${command}</span>`;
-                
-                let responseHTML = '';
+      }, 550);
+    }
 
-                // Process the command
-                if (command === 'clear') {
-                    outputHistory.innerHTML = '';
-                    return;
-                } else if (fileSystem[command]) {
-                    responseHTML = `<div class="output">${fileSystem[command]}</div>`;
-                } else {
-                    responseHTML = `<div class="output error">bash: ${command}: command not found. Type 'help' for available commands.</div>`;
-                }
-
-                // Append to history
-                const newBlock = document.createElement('div');
-                newBlock.innerHTML = echoHTML + responseHTML;
-                outputHistory.appendChild(newBlock);
-
-                // Auto-scroll to bottom
-                terminalContent.scrollTop = terminalContent.scrollHeight;
-            }
-        });
-    </script>
+    // Keyboard bindings
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        step(-1);
+      } else if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        step(1);
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        fireAtomicBreath();
+      } else if (e.key === "Escape" && isModalOpen) {
+        modal.classList.add("hidden");
+        isModalOpen = false;
+      }
+    });
+  </script>
 </body>
 </html>
