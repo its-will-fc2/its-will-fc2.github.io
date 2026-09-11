@@ -5,15 +5,13 @@ const PORTFOLIO_CONTENT = {
     "----------------------------------------",
     "Location: Cambridge, ON",
     "",
-    "Computer Science student specializing in cybersecurity, currently",
+    "I am a Computer Science student specializing in cybersecurity, currently",
     "pursuing a BSc in Computer Science at Wilfrid Laurier University",
-    "(expected Aug 2027). Previously completed a BSc in Mathematics with",
-    "a Minor in Computer Science & Statistics at the University of",
-    "Toronto Mississauga (2020-2023).",
+    "(expected Aug 2027).",
     "",
-    "Focused on network security, threat detection, and building",
+    "I focus on network security, threat detection, and building",
     "hands-on security tools -- from AI-assisted SOC log analysis to",
-    "CTF exploitation. Comfortable across Python, C/C++, Docker, and",
+    "CTF exploitation. I am comfortable across Python, C/C++, Docker, and",
     "Linux, with growing experience applying LLMs to security automation."
   ],
   education: [
@@ -21,11 +19,7 @@ const PORTFOLIO_CONTENT = {
     "  EDUCATION",
     "----------------------------------------",
     "Wilfrid Laurier University -- Waterloo, ON",
-    "  BSc in Computer Science (Expected Aug 2027)",
-    "",
-    "University of Toronto Mississauga -- Mississauga, ON",
-    "  BSc in Mathematics, Minor in Computer Science & Statistics",
-    "  (Sept 2020 - Apr 2023)"
+    "  BSc in Computer Science (Expected Aug 2027)"
   ],
   skills: [
     "----------------------------------------",
@@ -45,8 +39,8 @@ const PORTFOLIO_CONTENT = {
     "                  ethical hacking workflows, network security",
     "[ Languages ]     Python, C, C++, Java, JavaScript, Swift, R, SQL",
     "[ Web ]           HTML, CSS, Node.js, Express.js, React, Bootstrap",
-    "[ ML/AI ]         PyTorch, TensorFlow, LLM API integration",
-    "[ Infra ]         Docker, Git, MongoDB, Linux/Unix"
+    "[ ML/AI ]         PyTorch, TensorFlow",
+    "[ Infra ]         Docker, Git, MongoDB, Linux/Unix, KaliLinux"
   ],
   experience: [
     "----------------------------------------",
@@ -153,9 +147,8 @@ const PORTFOLIO_CONTENT = {
     "  CONTACT",
     "----------------------------------------",
     "email    : osha09@pm.me",
-    "phone    : 647-700-8630",
     "location : Cambridge, ON",
-    "linkedin : see resume / ask directly",
+    "linkedin : see resume",
     "",
     "type 'sudo hire will' if you're a recruiter ;)"
   ]
