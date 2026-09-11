@@ -15,11 +15,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // fixed 5-row glyph table so every letter is guaranteed legible (no
   // hand-drawn font drift like the previous version had).
   const ASCII_BANNER = [
-    "#   #  #   # ##### #     #        #   # #   #  ###  #   #  #### ",
-    "#   #  #   #   #   #     #        #   # #   # #   # ##  # #     ",
-    "# # #  # # #   #   #     #        ##### #   # ##### # # # # ### ",
-    "## ##  ## ##   #   #     #        #   # #   # #   # #  ## #   # ",
-    "#   #  #   # ##### ##### #####    #   # ##### #   # #   #  #### "
+    "#   # ##### #     #        #   # #   #  ###  #   #  #### ",
+    "#   #   #   #     #        #   # #   # #   # ##  # #     ",
+    "# # #   #   #     #        ##### #   # ##### # # # # ### ",
+    "## ##   #   #     #        #   # #   # #   # #  ## #   # ",
+    "#   # ##### ##### #####    #   # ##### #   # #   #  #### "
   ];
 
   const ALIASES = {
